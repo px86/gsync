@@ -1,0 +1,8 @@
+#+TITLE: gsync
+#+SUBTITLE: A python tool for syncing files between google drive and local file system
+#+AUTHOR: Pushkar Raj
+#+EMAIL: px86@protonmail.com
+
+
+
+A python tool for syncing files between google drive and local file system.
