@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
+from datetime import datetime
 
 
 class FileSystem(ABC):
@@ -33,3 +34,15 @@ class FileSystem(ABC):
 
         If recursive is True, iterate recusively over subdirectories too.
         """
+
+    @abstractmethod
+    def last_modified_time(self, filepath: str) -> datetime:
+        """Return the last modified time of the file."""
+
+    @abstractmethod
+    def md5hash(self, filepath: str) -> str:
+        """Return the md5 hash of the file as a string."""
+
+    @abstractmethod
+    def size(self, filepath: str) -> int:
+        """Return the size of the file in bytes."""

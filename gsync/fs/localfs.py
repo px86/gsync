@@ -1,8 +1,11 @@
 """Concrete implelemetaion for local filesystem."""
 
 import os
+import pathlib
 from collections.abc import Iterable
 from typing import BinaryIO
+from datetime import datetime, timezone
+import hashlib
 
 from gsync.fs.fs import FileSystem
 
@@ -24,6 +27,9 @@ class LocalFileIterator(Iterable):
 class LocalFileSystem(FileSystem):
     """Concrete class representing local filesystem."""
 
+    def __init__(self, root: str):
+        self.root = root
+
     def exists(self, path: str) -> bool:
         "Check if given path exists."
         return os.path.exists(path)
@@ -34,9 +40,13 @@ class LocalFileSystem(FileSystem):
         If mkparents is True, also create the non-existent parents
         as necessary. Otherwise, raise an exception in such cases.
         """
+        pathlib.Path(dirpath).mkdir(parents=mkparents, exist_ok=True)
 
     def copy_to(self, destination_path: str, source: Iterable):
         "Copy the contents from byte source to destination path."
+        parentdir = os.path.dirname(destination_path)
+        if not os.path.exists(parentdir):
+            self.mkdir(parentdir)
         with open(destination_path, "wb") as fout:
             for data in source:
                 fout.write(data)
@@ -60,3 +70,21 @@ class LocalFileSystem(FileSystem):
                     yet_to_traverse.append(fullpath)
                 else:
                     yield fullpath
+
+    # TODO: figure out timezone of the system
+    def last_modified_time(self, filepath: str) -> datetime:
+        """Return the last modified time of the file."""
+        last_modified_time = os.stat(filepath).st_mtime
+        return datetime.fromtimestamp(last_modified_time, tz=timezone.utc)
+
+    def md5hash(self, filepath: str) -> str:
+        """Return the md5 hash of the file as a string."""
+        md5 = hashlib.md5()
+        with open(filepath, "rb") as fin:
+            while data := fin.read(4096):
+                md5.update(data)
+        return md5.hexdigest()
+
+    def size(self, filepath: str) -> int:
+        """Return the size of the file in bytes."""
+        return os.stat(filepath).st_size

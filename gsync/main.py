@@ -1,7 +1,8 @@
+import os
 from gsync.fs import FileSystem, GDFileSystem, LocalFileSystem
 
 
-def sync(sourcedir: str, destinationdir: str):
+def sync(sourcedir: str, destinationdir: str, options: dict):
     source = (
         GDFileSystem(sourcedir)
         if sourcedir.startswith("gd:")
@@ -13,20 +14,27 @@ def sync(sourcedir: str, destinationdir: str):
         else LocalFileSystem(destinationdir)
     )
 
-    sync_dir(source, destination)
+    return sync_dir(source, destination, options)
 
 
-# FIXME: not implemented yet
-def sync_dir(srcroot: FileSystem, destroot: FileSystem):
+def sync_dir(source: FileSystem, destination: FileSystem, options: dict):
     """Sync the directories."""
 
-    raise NotImplementedError()
-    #
-    # for sourcefile in srcroot.files(recurse=True):
-    #     expected_destination_file = sourcefile.replace(srcroot.path, destroot.path)
-    #     if not destroot.file_exists(expected_destination_file):
-    #         # copy the file
-    #         pass
-    #     else:
-    #         # compare the last modified timestamp and decide
-    #         pass
+    for srcfile in source.files(source.root, options["recursive"]):
+        prefix = os.path.commonprefix([source.root, srcfile])
+        destfile = srcfile.replace(prefix, destination.root)
+
+        print(f"{srcfile} -> {destfile}", end=" ")
+
+        # TODO: figure out how to preseve timestamps when writing files
+        #       from local filesytem to google-drive and vice versa
+        if destination.exists(destfile):
+            lmd_src = source.last_modified_time(srcfile)
+            lmd_dest = destination.last_modified_time(destfile)
+            if lmd_src > lmd_dest:
+                print("UPDATE (NOT IMPLEMENTED)")
+            else:
+                print("destination file is newer, skipping...")
+        else:
+            print("DOES NOT EXIST...COPYING")
+            destination.copy_to(destfile, source.ropen(srcfile))

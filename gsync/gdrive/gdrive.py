@@ -66,10 +66,16 @@ class GDrive:
 
     default_file_fields = list(FileMetaData.__annotations__.keys())
 
-    def __init__(self, access_token_getter: Callable[[], str]):
+    def __init__(
+        self, access_token_getter: Callable[[], str], path_prefix: str = "gd:"
+    ):
         self.get_access_token = access_token_getter
-        self._tree_root = None
-        self._path_map = None
+        self.path_prefix = path_prefix
+
+        self._tree_root = {}
+        self._path_map = {}
+
+        self.initialized = False
 
     def request(self, *args, **kwargs):
         """Proxy method for requests.request function call."""
@@ -170,7 +176,7 @@ class GDrive:
 
         Make sure to close the requests.Response object.
         """
-        assert self._path_map, "GDrive._path_map not initialized"
+        assert self.initialized, "GDrive.construct_tree not called yet"
 
         file = self._path_map.get(path, None)
         if file is None:
@@ -224,14 +230,17 @@ class GDrive:
         If mkparents is True, create all the missing parent folders.
         Otherwise throw an error if any of the parent folders is missing.
         """
-        assert path != "gd:/"
+        assert self.initialized, "GDrive.construct_tree not called yet"
+
+        assert path != f"{self.path_prefix}/"
 
         pdirs, foldername = os.path.split(os.path.dirname(path))
         prefix, *pdirs = pdirs.split("/")
 
-        assert prefix == "gd:"
+        assert prefix == self.path_prefix, "Path prefix did not match"
 
         last_node = self._tree_root
+
         for pdir in pdirs:
             found = False
             for subfolder in last_node["subfolders"]:
@@ -257,6 +266,7 @@ class GDrive:
 
     def upload(self, destpath: str, source: Iterable) -> dict | None:
         """Upload file to google drive in a single step."""
+        assert self.initialized, "GDrive.construct_tree not called yet"
 
         filename = os.path.basename(destpath)
         dirpath = os.path.dirname(destpath) + "/"
@@ -265,7 +275,8 @@ class GDrive:
             self.mkdir(dirpath, mkparents=True)
 
         parent = self._path_map.get(dirpath, None)
-        assert parent is not None
+        if parent is None:
+            raise FileNotFoundError(f"'{dirpath}' not foud!")
 
         # TODO: figure out file's mimeType
         metadata = {
@@ -446,6 +457,7 @@ class GDrive:
 
         self._tree_root = recursively_fill_nodes(root_info, "")
         self._path_map = path_map
+        self.initialized = True
 
     # TODO: Simplify this method.
     def path_exists(self, gdpath: str) -> tuple[bool, dict]:
@@ -466,12 +478,11 @@ class GDrive:
         contains the id, and name of the last matched node, and also the
         remaining part of the given path which was not matched.
         """
-        prefix, *dirs, filename = gdpath.split("/")
-        assert prefix == "gd:", "Path must start with 'gd:'"
+        assert self.initialized, "GDrive.construct_tree not called yet"
 
-        if not self._tree_root:
-            self.construct_tree()
-            assert self._tree_root is not None
+        prefix, *dirs, filename = gdpath.split("/")
+
+        assert prefix == self.path_prefix, "Path prefix do not match"
 
         last_matched_node = self._tree_root
         matched_so_far = True
@@ -507,10 +518,12 @@ class GDrive:
 
     def walk_tree(self, dirpath: str, recursive: bool = True) -> Iterable:
         """Walk down the filetree."""
-        assert self._path_map is not None
+        assert self.initialized, "GDrive.construct_tree not called yet"
 
         node = self._path_map.get(dirpath, None)
-        assert node is not None
+        if node is None:
+            raise FileNotFoundError(f"'{dirpath}' not found")
+
         yet_to_traverse = [node]
         while len(yet_to_traverse) > 0:
             node = yet_to_traverse.pop()
@@ -518,3 +531,14 @@ class GDrive:
                 yield file["path"]
             if recursive:
                 yet_to_traverse.extend(node["subfolders"])
+
+    def getprop(self, path: str, prop: str):
+        """Get 'prop' property for node associated with path."""
+        assert self.initialized, "GDrive.construct_tree not called yet"
+
+        node = self._path_map.get(path, None)
+        if node is None:
+            raise FileNotFoundError(f"'{path}' not found!")
+
+        # let keyerror be raised if prop does not exist in node.
+        return node[prop]

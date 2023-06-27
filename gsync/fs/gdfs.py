@@ -1,6 +1,7 @@
 """Concrete implementation of google drive filesystem."""
 
 from collections.abc import Iterable
+from datetime import datetime
 
 from gsync.fs.fs import FileSystem
 from gsync.gdrive import drive, GDFileIterator
@@ -43,3 +44,16 @@ class GDFileSystem(FileSystem):
         If recursive is True, iterate recusively over subdirectories too.
         """
         return drive.walk_tree(dirpath, recursive)
+
+    def last_modified_time(self, filepath: str) -> datetime:
+        """Return the last modified time of the file."""
+        modified_time_str = drive.getprop(filepath, "modifiedTime")
+        return datetime.fromisoformat(modified_time_str)
+
+    def md5hash(self, filepath: str) -> str:
+        """Return the md5 hash of the file as a string."""
+        return drive.getprop(filepath, "md5Checksum")
+
+    def size(self, filepath: str) -> int:
+        """Return the size of the file in bytes."""
+        return drive.getprop(filepath, "size")
