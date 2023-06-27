@@ -25,4 +25,11 @@ class FileSystem(ABC):
 
     @abstractmethod
     def ropen(self, filepath: str) -> Iterable:
-        "Return a read only iterable object."
+        "Open a file for reading and return an iterable."
+
+    @abstractmethod
+    def files(self, dirpath: str, recursive: bool) -> Iterable:
+        """Return an iterator to iterate over files in the dirpath.
+
+        If recursive is True, iterate recusively over subdirectories too.
+        """

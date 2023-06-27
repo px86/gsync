@@ -44,3 +44,19 @@ class LocalFileSystem(FileSystem):
     def ropen(self, filepath: str) -> Iterable:
         "Return a read only iterable object."
         return open(filepath, "rb")
+
+    def files(self, dirpath: str, recursive: bool) -> Iterable:
+        """Return an iterator to iterate over files in the dirpath.
+
+        If recursive is True, iterate over subdirectories recursively.
+        """
+        yet_to_traverse = [dirpath]
+        while len(yet_to_traverse) > 0:
+            dirpath = yet_to_traverse.pop()
+            entries = os.listdir(dirpath)
+            for entry in entries:
+                fullpath = os.path.join(dirpath, entry)
+                if os.path.isdir(fullpath) and recursive:
+                    yet_to_traverse.append(fullpath)
+                else:
+                    yield fullpath

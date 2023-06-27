@@ -504,3 +504,17 @@ class GDrive:
             "last_matched_name": last_matched_node["name"],
             "mismatch": mismatch,
         }
+
+    def walk_tree(self, dirpath: str, recursive: bool = True) -> Iterable:
+        """Walk down the filetree."""
+        assert self._path_map is not None
+
+        node = self._path_map.get(dirpath, None)
+        assert node is not None
+        yet_to_traverse = [node]
+        while len(yet_to_traverse) > 0:
+            node = yet_to_traverse.pop()
+            for file in node["files"]:
+                yield file["path"]
+            if recursive:
+                yet_to_traverse.extend(node["subfolders"])
