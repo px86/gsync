@@ -14,27 +14,30 @@ def sync(sourcedir: str, destinationdir: str, options: dict):
         else LocalFileSystem(destinationdir)
     )
 
-    return sync_dir(source, destination, options)
+    return __sync(source, destination, options)
 
 
-def sync_dir(source: FileSystem, destination: FileSystem, options: dict):
+# TODO: add more customization options
+def __sync(source: FileSystem, destination: FileSystem, options: dict):
     """Sync the directories."""
 
     for srcfile in source.files(source.root, options["recursive"]):
         prefix = os.path.commonprefix([source.root, srcfile])
         destfile = srcfile.replace(prefix, destination.root)
 
-        print(f"{srcfile} -> {destfile}", end=" ")
+        print(f"{srcfile} -> {destfile}".ljust(120, " "), end=" ")
 
-        # TODO: figure out how to preseve timestamps when writing files
-        #       from local filesytem to google-drive and vice versa
         if destination.exists(destfile):
             lmd_src = source.last_modified_time(srcfile)
             lmd_dest = destination.last_modified_time(destfile)
             if lmd_src > lmd_dest:
-                print("UPDATE (NOT IMPLEMENTED)")
+                print("UPDATING... (NOT IMPLEMENTED)")
+                # TODO: implement this...
+            elif lmd_src < lmd_dest:
+                print("DEST NEWER...SKIPPING")
             else:
-                print("destination file is newer, skipping...")
+                print("UP-TO-DATE...SKIPPING")
         else:
-            print("DOES NOT EXIST...COPYING")
+            print("COPYING...")
             destination.copy_to(destfile, source.ropen(srcfile))
+            destination.touch(destfile, source.last_modified_time(srcfile))

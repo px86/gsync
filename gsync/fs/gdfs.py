@@ -1,7 +1,7 @@
 """Concrete implementation of google drive filesystem."""
 
 from collections.abc import Iterable
-from datetime import datetime
+from datetime import datetime, timezone
 
 from gsync.fs.fs import FileSystem
 from gsync.gdrive import drive, GDFileIterator
@@ -46,7 +46,7 @@ class GDFileSystem(FileSystem):
         return drive.walk_tree(dirpath, recursive)
 
     def last_modified_time(self, filepath: str) -> datetime:
-        """Return the last modified time of the file."""
+        """Return the last modified time of the file a/c UTC timezone."""
         modified_time_str = drive.getprop(filepath, "modifiedTime")
         return datetime.fromisoformat(modified_time_str)
 
@@ -57,3 +57,21 @@ class GDFileSystem(FileSystem):
     def size(self, filepath: str) -> int:
         """Return the size of the file in bytes."""
         return drive.getprop(filepath, "size")
+
+    def touch(
+        self,
+        filepath: str,
+        mtime: datetime | None = None,
+    ):
+        """Update the  modified timestam of given file.
+
+        Defaults to current UTC time.
+        """
+        if mtime is None:
+            mtime = datetime.now(tz=timezone.utc).isoformat()
+        else:
+            mtime = datetime.fromtimestamp(
+                mtime.timestamp(), tz=timezone.utc
+            ).isoformat()
+
+        drive.update_metadata(filepath, {"modifiedTime": mtime})

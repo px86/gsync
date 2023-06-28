@@ -37,7 +37,7 @@ class FileSystem(ABC):
 
     @abstractmethod
     def last_modified_time(self, filepath: str) -> datetime:
-        """Return the last modified time of the file."""
+        """Return the last modified time of the file a/c UTC timezone."""
 
     @abstractmethod
     def md5hash(self, filepath: str) -> str:
@@ -46,3 +46,14 @@ class FileSystem(ABC):
     @abstractmethod
     def size(self, filepath: str) -> int:
         """Return the size of the file in bytes."""
+
+    @abstractmethod
+    def touch(
+        self,
+        filepath: str,
+        mtime: datetime | None = None,
+    ):
+        """Update the modified timestamp of the given file.
+
+        Defaults to the current UTC time.
+        """

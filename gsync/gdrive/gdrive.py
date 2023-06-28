@@ -329,11 +329,14 @@ class GDrive:
             return True
         return False
 
-    def update_metadata(self, id: str, metadata: dict) -> bool:
+    def update_metadata(self, filepath: str, metadata: dict) -> bool:
         """Update file's metadata."""
+        assert self.initialized, "GDrive.construct_tree not called yet"
+
+        fileid = self._path_map[filepath]["id"]
         response = self.request(
             method="PATCH",
-            url=f"{self.api}/files/{id}",
+            url=f"{self.api}/files/{fileid}",
             json=metadata,
         )
         if response.status_code == 200:
@@ -341,17 +344,20 @@ class GDrive:
         logging.error(
             "error while updating metadata for fileid '%s', "
             "http_response: <%i> '%s'",
-            id,
+            fileid,
             response.status_code,
             response.text,
         )
         return False
 
-    def update_content(self, id: str, source: Iterable) -> bool:
+    def update_content(self, filepath: str, source: Iterable) -> bool:
         """Update file content."""
+        assert self.initialized, "GDrive.construct_tree not called yet"
+
+        fileid = self._path_map[filepath]["id"]
         response = self.request(
             method="PATCH",
-            url=f"{self.upload_api}/files/{id}",
+            url=f"{self.upload_api}/files/{fileid}",
             param={"uploadType": "media"},
             data=source,
         )
@@ -360,7 +366,7 @@ class GDrive:
         logging.error(
             "error while updating content for fileid '%s',  "
             "http_response: <%i> '%s'",
-            id,
+            fileid,
             response.status_code,
             response.text,
         )

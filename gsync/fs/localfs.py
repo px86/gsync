@@ -2,10 +2,11 @@
 
 import os
 import pathlib
+import time
+import hashlib
+from datetime import datetime, timezone
 from collections.abc import Iterable
 from typing import BinaryIO
-from datetime import datetime, timezone
-import hashlib
 
 from gsync.fs.fs import FileSystem
 
@@ -71,10 +72,9 @@ class LocalFileSystem(FileSystem):
                 else:
                     yield fullpath
 
-    # TODO: figure out timezone of the system
     def last_modified_time(self, filepath: str) -> datetime:
-        """Return the last modified time of the file."""
-        last_modified_time = os.stat(filepath).st_mtime
+        """Return the last modified time of the file a/c UTC timezone."""
+        last_modified_time = os.stat(filepath).st_mtime + time.timezone
         return datetime.fromtimestamp(last_modified_time, tz=timezone.utc)
 
     def md5hash(self, filepath: str) -> str:
@@ -88,3 +88,19 @@ class LocalFileSystem(FileSystem):
     def size(self, filepath: str) -> int:
         """Return the size of the file in bytes."""
         return os.stat(filepath).st_size
+
+    def touch(
+        self,
+        filepath: str,
+        mtime: datetime | None = None,
+    ):
+        """Update the modified timestamp of the given file.
+
+        Defaults to the current UTC time.
+        """
+        if mtime is None:
+            mtime = datetime.now(tz=timezone.utc).timestamp()
+        else:
+            mtime = mtime.timestamp()
+        mtime -= time.timezone
+        os.utime(filepath, (mtime, mtime))
