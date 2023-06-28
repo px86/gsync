@@ -1,4 +1,4 @@
-"""Concrete implementation of google drive filesystem."""
+"""Implementation of filesystem abstractions for google drive."""
 
 from collections.abc import Iterable
 from datetime import datetime, timezone
@@ -8,13 +8,13 @@ from gsync.gdrive import drive, GDFileIterator
 
 
 class GDFileSystem(FileSystem):
-    """Class representing a google drive filesytem."""
+    """Implementation of necessary filesystem operations for google drive."""
 
     def __init__(self, root: str):
         self.root = root
 
     def exists(self, path: str) -> bool:
-        "Check if given path exists."
+        "Check if the given path exists."
         return drive.path_exists(path)[0]
 
     def mkdir(self, dirpath: str, mkparents: bool = True):
@@ -26,20 +26,23 @@ class GDFileSystem(FileSystem):
         drive.mkdir(dirpath, mkparents)
 
     def copy_to(self, destination_path: str, source: Iterable):
-        "Copy the contents from byte source to destination path."
-        exists, gdfile = drive.path_exists(destination_path)
+        """Copy the contents from byte source to destination file.
+
+        If the destination file does not exist already, create one.
+        Otherwise update the content of file.
+        """
+        exists, _ = drive.path_exists(destination_path)
         if exists:
-            assert gdfile["mimeType"] != "application/vnd.google-apps.folder"
-            drive.update_content(gdfile["id"], source)
+            drive.update_content(destination_path, source)
         else:
             drive.upload(destination_path, source)
 
     def ropen(self, filepath: str) -> GDFileIterator:
-        "Return an read only io object, make sure to call close."
+        """Return an read only io object, make sure to call close."""
         return drive.open_read_only(filepath)
 
     def files(self, dirpath: str, recursive: bool) -> Iterable:
-        """Return an iterator to iterate over files in the dirpath.
+        """Return an iterator to iterate over files in 'dirpath'.
 
         If recursive is True, iterate recusively over subdirectories too.
         """
@@ -63,7 +66,7 @@ class GDFileSystem(FileSystem):
         filepath: str,
         mtime: datetime | None = None,
     ):
-        """Update the  modified timestam of given file.
+        """Update the modified timestamp of the given file.
 
         Defaults to current UTC time.
         """

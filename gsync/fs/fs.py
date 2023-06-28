@@ -1,4 +1,4 @@
-"""Abstraction over filesystem functionalities."""
+"""Abstraction over necessary filesystem functionalities."""
 
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
@@ -6,11 +6,11 @@ from datetime import datetime
 
 
 class FileSystem(ABC):
-    """An abstract class representing a file."""
+    """An abstract class representing necessary filesystem operations."""
 
     @abstractmethod
     def exists(self, path: str) -> bool:
-        "Check if given path exists."
+        """Check if given path exists."""
 
     @abstractmethod
     def mkdir(self, dirpath: str, mkparents: bool = True):
@@ -22,11 +22,15 @@ class FileSystem(ABC):
 
     @abstractmethod
     def copy_to(self, destination_path: str, source: Iterable):
-        "Copy the contents from byte source to destination path."
+        """Copy the contents from byte source to destination path.
+
+        Implementations should deal with cases where the destination
+        does or does not exist.
+        """
 
     @abstractmethod
     def ropen(self, filepath: str) -> Iterable:
-        "Open a file for reading and return an iterable."
+        """Open a file for reading and return an iterable."""
 
     @abstractmethod
     def files(self, dirpath: str, recursive: bool) -> Iterable:

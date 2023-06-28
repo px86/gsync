@@ -358,7 +358,7 @@ class GDrive:
         response = self.request(
             method="PATCH",
             url=f"{self.upload_api}/files/{fileid}",
-            param={"uploadType": "media"},
+            params={"uploadType": "media"},
             data=source,
         )
         if response.status_code == 200:

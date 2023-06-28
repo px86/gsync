@@ -13,7 +13,7 @@ def main():
         "-c",
         "--checksum",
         action="store_true",
-        help="use checksum instead of last modified time to compare files",
+        help="use checksum instead of last modified time to compare files (NOT IMPLEMENTED YET)",
     )
     parser.add_argument("sourcedir")
     parser.add_argument("destinationdir")

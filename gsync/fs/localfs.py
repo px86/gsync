@@ -1,4 +1,4 @@
-"""Concrete implelemetaion for local filesystem."""
+"""Implementation of filesystem abstractions for local filesystem."""
 
 import os
 import pathlib
@@ -6,21 +6,21 @@ import time
 import hashlib
 from datetime import datetime, timezone
 from collections.abc import Iterable
-from typing import BinaryIO
+from io import BufferedReader
 
 from gsync.fs.fs import FileSystem
 
 
 class LocalFileIterator(Iterable):
-    """An iterator class for iterating over the local file."""
+    """An iterator class for iterating over the contents of a local file."""
 
     chunksize: int = 4096
 
-    def __init__(self, file_object: BinaryIO):
+    def __init__(self, file_object: BufferedReader):
         self.file_object = file_object
 
     def __iter__(self):
-        for data in self.file_object.read(self.chunksize):
+        while data := self.file_object.read(self.chunksize):
             yield data
         self.file_object.close()
 
@@ -32,7 +32,7 @@ class LocalFileSystem(FileSystem):
         self.root = root
 
     def exists(self, path: str) -> bool:
-        "Check if given path exists."
+        """Check if given path exists."""
         return os.path.exists(path)
 
     def mkdir(self, dirpath: str, mkparents: bool = True):
@@ -44,7 +44,7 @@ class LocalFileSystem(FileSystem):
         pathlib.Path(dirpath).mkdir(parents=mkparents, exist_ok=True)
 
     def copy_to(self, destination_path: str, source: Iterable):
-        "Copy the contents from byte source to destination path."
+        """Copy the contents from byte source to destination path."""
         parentdir = os.path.dirname(destination_path)
         if not os.path.exists(parentdir):
             self.mkdir(parentdir)
@@ -53,8 +53,8 @@ class LocalFileSystem(FileSystem):
                 fout.write(data)
 
     def ropen(self, filepath: str) -> Iterable:
-        "Return a read only iterable object."
-        return open(filepath, "rb")
+        """Return a read only iterable object."""
+        return LocalFileIterator(open(filepath, "rb"))
 
     def files(self, dirpath: str, recursive: bool) -> Iterable:
         """Return an iterator to iterate over files in the dirpath.
@@ -75,6 +75,8 @@ class LocalFileSystem(FileSystem):
     def last_modified_time(self, filepath: str) -> datetime:
         """Return the last modified time of the file a/c UTC timezone."""
         last_modified_time = os.stat(filepath).st_mtime + time.timezone
+        # round the timestamp to milliseconds
+        last_modified_time = int(last_modified_time * 1000) / 1000
         return datetime.fromtimestamp(last_modified_time, tz=timezone.utc)
 
     def md5hash(self, filepath: str) -> str:

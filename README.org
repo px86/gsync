@@ -4,5 +4,30 @@
 #+EMAIL: px86@protonmail.com
 
 
+A python tool for syncing files between google drive and local file-system.
 
-A python tool for syncing files between google drive and local file system.
+NOTE: This is the development branch. No commits have been made to the main/master branch yet.
+
+* Installation
+
+Currently, to use this tool you have to create a project in google cloud console, configure the oAuth consent screen, get client id and client secret, authorize yourself via oAuthPlayground and get a refresh token. Then export these credentials via environment variables.
+
+I may write a detailed blog about this in near future. However, my current priority is to implement more features.
+
+* Usage
+
+The =--help= option produces the following output.
+
+#+begin_src shell
+  usage: gsync.py [-h] [-r] [-c] sourcedir destinationdir
+
+  positional arguments:
+    sourcedir
+    destinationdir
+
+  options:
+    -h, --help       show this help message and exit
+    -r, --recursive  scan and sync files recursively
+    -c, --checksum   use checksum instead of last modified time to  compare files (NOT IMPLEMENTED YET)
+
+#+end_src
