@@ -4,30 +4,64 @@
 #+EMAIL: px86@protonmail.com
 
 
-A python tool for syncing files between google drive and local file-system.
+A python tool for syncing files between google drive and local file-system (both ways).
 
 NOTE: This is the development branch. No commits have been made to the main/master branch yet.
 
 * Installation
 
-Currently, to use this tool you have to create a project in google cloud console, configure the oAuth consent screen, get client id and client secret, authorize yourself via oAuthPlayground and get a refresh token. Then export these credentials via environment variables.
+** Step 0: getting credentials
 
-I may write a detailed blog about this in near future. However, my current priority is to implement more features.
+You will need three credentials: =client_id=, =client_secret=, and =refresh_token=, to use this tool.
+To get these, you need to:
+
+1. Create a poject in [[https://console.cloud.google.com/][google cloud console]].
+2. Confiugure the consent screen.
+3. Obtain the =client_id= and =client_secret=.
+4. Authorize to google drive via [[https://developers.google.com/oauthplayground/][OAuth 2.0 Playground]] and get a =refresh_token=.
+
+Now, export these secrets as =CLIENT_ID=, =CLIENT_SECRET=, and =REFRESH_TOKEN= environment variables.
+
+** Step 1: installing gsync
+
+#+begin_src shell
+  git clone https://github.com/px86/gsync
+  cd gsync
+  pipenv install
+  pipenv run python gsync.py --help
+#+end_src
 
 * Usage
 
-The =--help= option produces the following output.
+=gsync= syncs file based on source and destination folders. For example, the below command will initialize a local copy of your google drive, into the =local-drive/= folder. Here the source is =gd:/= and =local-drive/= is the destination. -r means recursively.
 
 #+begin_src shell
-  usage: gsync.py [-h] [-r] [-c] sourcedir destinationdir
+  gsync gd:/  local-drive/ -r
+#+end_src
 
-  positional arguments:
-    sourcedir
-    destinationdir
+Note that all google drive paths start with =gd:= prefix. =gd:/= refers to the =My Drive= folder in your google drive, =gd:/Documents/= will refer to =My Drive/Documents/= and so on.
 
-  options:
-    -h, --help       show this help message and exit
-    -r, --recursive  scan and sync files recursively
-    -c, --checksum   use checksum instead of last modified time to  compare files (NOT IMPLEMENTED YET)
+You can switch the source and destination to sync in the reverse direction.
 
+It is also possible to sync a given subdirectory only. For example, the below command will make sure that all files in the =local-drive/Documents/Work/= folder are present and up-to-date in the drive in =My Drive/Documents/= folder.
+
+#+begin_src shell
+  gsync  local-drive/Documents/Work/  gd:/Documents/
+#+end_src
+
+** the --help option
+
+#+begin_src shell
+usage: gsync.py [-h] [-r] [-c] [--dry-run] [--max-size SIZE] sourcedir destinationdir
+
+positional arguments:
+  sourcedir
+  destinationdir
+
+options:
+  -h, --help       show this help message and exit
+  -r, --recursive  sync source recursively
+  -c, --checksum   use checksum instead of modified time and size to compare files
+  --dry-run        only print the updates, do not do anything
+  --max-size SIZE  skip files which are greater than SIZE bytes
 #+end_src

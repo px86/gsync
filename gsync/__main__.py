@@ -28,7 +28,8 @@ def main():
     parser.add_argument(
         "--max-size",
         type=int,
-        help="skip files which are greater than max-size bytes",
+        metavar="SIZE",
+        help="skip files which are greater than SIZE bytes",
     )
 
     parser.add_argument("sourcedir")
