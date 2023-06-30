@@ -59,7 +59,7 @@ class GDFileSystem(FileSystem):
 
     def size(self, filepath: str) -> int:
         """Return the size of the file in bytes."""
-        return drive.getprop(filepath, "size")
+        return int(drive.getprop(filepath, "size"))
 
     def touch(
         self,
