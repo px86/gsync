@@ -1,15 +1,12 @@
 """Initialize a TokenManager object."""
+
 from gsync.auth.tokenmanager import TokenManager
 from gsync.gdrive.gdrive import GDrive, GDFileIterator
 
 
-tokenmanager = TokenManager.from_env(
-    client_id="CLIENT_ID",
-    client_secret="CLIENT_SECRET",
-    refresh_token="REFRESH_TOKEN",
-)
+tokenmanager = TokenManager()
 
-drive = GDrive(tokenmanager.get_access_token)
+drive = GDrive(tokenmanager.auth())
 drive.construct_tree()
 
 __all__ = [

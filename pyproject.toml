@@ -5,6 +5,7 @@ description = "A python tool for syncing files between google drive and local fi
 readme = "README.org"
 requires-python = ">=3.11"
 dependencies = [
+    "platformdirs>=4.3.8",
     "python-dotenv>=1.1.0",
     "requests>=2.32.3",
 ]

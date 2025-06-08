@@ -3,10 +3,15 @@
 import json
 import logging
 import os
+import webbrowser
 from datetime import datetime, timedelta
 from typing import TypeAlias
-
+import typing
 import requests
+
+from urllib.parse import urlencode
+from gsync.auth.credreader import CredentialsReader, ClientCredentials
+from gsync.auth.server import select_redirect_uri, launch_server
 
 PathType: TypeAlias = str | bytes | os.PathLike
 
@@ -24,11 +29,12 @@ class TokenManager:
 
     api = "https://oauth2.googleapis.com/token"
 
-    def __init__(self, client_id: str, client_secret: str, refresh_token: str):
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.refresh_token = refresh_token
-        self.refresh()
+    def __init__(self, credreader: CredentialsReader | None = None):
+        self.credreader = CredentialsReader() if credreader is None else credreader
+        self.client_creds = self.credreader.read()
+        self.client_id = self.client_creds.web.client_id
+        self.client_secret = self.client_creds.web.client_secret
+        self.redirect_uri = None
 
     def refresh(self):
         """Refresh cached access token."""
@@ -50,11 +56,14 @@ class TokenManager:
                 datetime.now() + timedelta(0, data["expires_in"]) - timedelta(0, 120)
             )
             self._access_token_cached = data["access_token"]
-            logging.info("access token refreshed is valid till %s", str(self._valid_till))
+            logging.info(
+                "access token refreshed is valid till %s", str(self._valid_till)
+            )
         else:
             logging.critical(
                 "failed to refresh access token, http_response: <%i> '%s' ",
-                response.status_code, response.text
+                response.status_code,
+                response.text,
             )
             raise TokenNotRefreshed()
 
@@ -70,8 +79,8 @@ class TokenManager:
         return self.get_access_token()
 
     @classmethod
-    def from_env(cls,
-        client_id: str, client_secret: str, refresh_token: str
+    def from_env(
+        cls, client_id: str, client_secret: str, refresh_token: str
     ) -> "TokenManager":
         """Read secrets from environment variables and construct a TokenManager object."""
         try:
@@ -82,3 +91,43 @@ class TokenManager:
             )
         except KeyError as keyerror:
             raise EnvironmentVariableNotSet() from keyerror
+
+    def get_auth_code(self) -> str:
+        uri = select_redirect_uri(self.client_creds.web.redirect_uris)
+        self.redirect_uri = uri.geturl()
+        _, authcode_cb = launch_server(port=uri.port)
+        params = {
+            "redirect_uri": self.redirect_uri,
+            "client_id": self.client_id,
+            "scope": "https://www.googleapis.com/auth/drive",
+            "response_type": "code",
+            "prompt": "consent",
+            "access_type": "offline",
+        }
+        authurl = self.client_creds.web.auth_uri + "?" + urlencode(params)
+        print(f"Visit the following URL in a web browser\n\n{authurl}")
+        webbrowser.open(authurl)
+        return authcode_cb()
+
+    def exchange_auth_code(self, authcode: str) -> dict | None:
+        """Exchange auth code for access and refresh tokens."""
+
+        payload = {
+            "code": authcode,
+            "redirect_uri": self.redirect_uri,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "grant_type": "authorization_code",
+        }
+        response = requests.post(self.client_creds.web.token_uri, data=payload)
+        if response.ok:
+            return response.json()
+        return None
+
+    def auth(self) -> typing.Callable[[], str]:
+        authcode = self.get_auth_code()
+        tokens = self.exchange_auth_code(authcode)
+        print(tokens)
+        self.refresh_token = tokens["refresh_token"]
+        self.refresh()
+        return self.get_access_token
