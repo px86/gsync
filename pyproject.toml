@@ -1,0 +1,18 @@
+[project]
+name = "gsync"
+version = "0.1.0"
+description = "A python tool for syncing files between google drive and local file system."
+readme = "README.org"
+requires-python = ">=3.11"
+dependencies = [
+    "python-dotenv>=1.1.0",
+    "requests>=2.32.3",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "mypy>=1.16.0",
+    "pytest>=8.4.0",
+    "python-lsp-server[all]>=1.12.2",
+]
