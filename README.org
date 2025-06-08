@@ -24,11 +24,13 @@ Now, export these secrets as =CLIENT_ID=, =CLIENT_SECRET=, and =REFRESH_TOKEN= e
 
 ** Step 1: installing gsync
 
+=gsync= uses =uv= to manage the project dependencies. You can find the steps to install =uv= [[https://docs.astral.sh/uv/getting-started/installation/][here]].
+
 #+begin_src shell
   git clone https://github.com/px86/gsync
   cd gsync
-  pipenv install
-  pipenv run python gsync.py --help
+  uv sync
+  uv run gsync.py --help
 #+end_src
 
 * Usage
