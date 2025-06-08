@@ -3,13 +3,15 @@
 import json
 import logging
 import os
+import typing
 import webbrowser
 from datetime import datetime, timedelta
 from typing import TypeAlias
-import typing
-import requests
-
 from urllib.parse import urlencode
+
+import requests
+from platformdirs import user_cache_dir
+
 from gsync.auth.credreader import CredentialsReader, ClientCredentials
 from gsync.auth.server import select_redirect_uri, launch_server
 
@@ -31,18 +33,32 @@ class TokenManager:
 
     def __init__(self, credreader: CredentialsReader | None = None):
         self.credreader = CredentialsReader() if credreader is None else credreader
+        self.cachefile = os.path.join(user_cache_dir(), "gsync", "token.json")
         self.client_creds = self.credreader.read()
         self.client_id = self.client_creds.web.client_id
         self.client_secret = self.client_creds.web.client_secret
         self.redirect_uri = None
 
-    def refresh(self):
+    def read_cache_file(self) -> dict:
+        with open(self.cachefile, "r") as f:
+            return json.loads(f.read())
+
+    def write_cache_file(self, data: dict) -> None:
+        with open(self.cachefile, "w") as f:
+            f.write(json.dumps(data))
+
+    def is_refresh_token_valid(self, refresh_token: str) -> bool:
+        "Check the validity of refresh token."
+        data = self.token_refresh(refresh_token)
+        return data is not None
+
+    def token_refresh(self, refresh_token: str) -> dict | None:
         """Refresh cached access token."""
         headers = {"content-type": "application/json"}
         payload = {
             "client_id": self.client_id,
             "client_secret": self.client_secret,
-            "refresh_token": self.refresh_token,
+            "refresh_token": refresh_token,
             "grant_type": "refresh_token",
         }
         response = requests.post(
@@ -51,7 +67,7 @@ class TokenManager:
             json=payload,
         )
         if response.status_code == 200:
-            data = json.loads(response.text)
+            data = response.json()
             self._valid_till = (
                 datetime.now() + timedelta(0, data["expires_in"]) - timedelta(0, 120)
             )
@@ -59,18 +75,19 @@ class TokenManager:
             logging.info(
                 "access token refreshed is valid till %s", str(self._valid_till)
             )
+            return data
         else:
             logging.critical(
                 "failed to refresh access token, http_response: <%i> '%s' ",
                 response.status_code,
                 response.text,
             )
-            raise TokenNotRefreshed()
+            return None
 
     def get_access_token(self) -> str:
         """Return access token and refresh if necessary."""
         if datetime.now() >= self._valid_till:
-            self.refresh()
+            self.token_refresh(self.refresh_token)
         return self._access_token_cached
 
     @property
@@ -124,10 +141,16 @@ class TokenManager:
             return response.json()
         return None
 
-    def auth(self) -> typing.Callable[[], str]:
-        authcode = self.get_auth_code()
-        tokens = self.exchange_auth_code(authcode)
-        print(tokens)
-        self.refresh_token = tokens["refresh_token"]
-        self.refresh()
+    def authenticate(self) -> typing.Callable[[], str]:
+        cached_data = self.read_cache_file()
+        if "refresh_token" in cached_data and self.is_refresh_token_valid(
+            cached_data["refresh_token"]
+        ):
+            self.refresh_token = cached_data["refresh_token"]
+        else:
+            authcode = self.get_auth_code()
+            tokens = self.exchange_auth_code(authcode)
+            self.refresh_token = tokens["refresh_token"]
+            self.write_cache_file(tokens)
+            self.token_refresh(self.refresh_token)
         return self.get_access_token

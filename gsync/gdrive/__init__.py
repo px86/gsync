@@ -6,7 +6,7 @@ from gsync.gdrive.gdrive import GDrive, GDFileIterator
 
 tokenmanager = TokenManager()
 
-drive = GDrive(tokenmanager.auth())
+drive = GDrive(tokenmanager.authenticate())
 drive.construct_tree()
 
 __all__ = [
