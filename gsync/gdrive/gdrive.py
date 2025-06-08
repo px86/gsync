@@ -141,6 +141,7 @@ class GDrive:
                     response.text,
                 )
                 return []
+
         return files
 
     def file_info(
@@ -181,7 +182,6 @@ class GDrive:
         file = self._path_map.get(path, None)
         if file is None:
             raise FileNotFoundError(f"{path} not found!")
-
         session = requests.Session()
         session.headers["Authorization"] = f"Bearer {self.get_access_token()}"
         response = session.get(
@@ -432,13 +432,13 @@ class GDrive:
         ]
 
         fentries = {
-            folder["id"]: [f for f in files if f["parents"] == [folder["id"]]]
+            folder["id"]: [f for f in files if f.get("parents") == [folder["id"]]]
             for folder in folders
         }
 
         root_info = self.file_info("root", ["name", "id"])
         assert root_info is not None
-        root_content = [f for f in files if f["parents"] == [root_info["id"]]]
+        root_content = [f for f in files if f.get("parents") == [root_info["id"]]]
         fentries["root"] = fentries[root_info["id"]] = root_content
 
         path_map = {}
@@ -455,6 +455,8 @@ class GDrive:
                     subfolder = recursively_fill_nodes(entry, currpath)
                     node["subfolders"].append(subfolder)
                 else:
+                    if entry["mimeType"].startswith("application/vnd.google-apps."):
+                        continue
                     node["files"].append(entry)
                     path = currpath + entry["name"]
                     entry["path"] = path
