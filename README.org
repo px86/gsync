@@ -4,23 +4,21 @@
 #+EMAIL: px86@protonmail.com
 
 
-A python tool for syncing files between google drive and local file-system (both ways).
+A cross platform CLI tool for synchronizing folders between google drive and local file-system (both ways).
 
-NOTE: This is the development branch. No commits have been made to the main/master branch yet.
+NOTE: This is the development branch.
 
 * Installation
 
-** Step 0: getting credentials
-
-You will need three credentials: =client_id=, =client_secret=, and =refresh_token=, to use this tool.
-To get these, you need to:
+** Step 0: Getting client credentials from Google Cloud Console
 
 1. Create a poject in [[https://console.cloud.google.com/][google cloud console]].
-2. Confiugure the consent screen.
-3. Obtain the =client_id= and =client_secret=.
-4. Authorize to google drive via [[https://developers.google.com/oauthplayground/][OAuth 2.0 Playground]] and get a =refresh_token=.
-
-Now, export these secrets as =CLIENT_ID=, =CLIENT_SECRET=, and =REFRESH_TOKEN= environment variables.
+2. Under =APIs and Services=, click on =OAuth Consent Screen=.
+3. Enter application name, for example =yourname-gsync=. Fill in other details.
+4. Once OAuth Consent Screen is configured, click on =Clients=, then click on =Create Client=.
+5. Select Application Type as =Web Application=. Under =Authorized redirect URIs= fill some localhost addresses like =http://localhost:8121= etc.
+6. Click on =Create= and download the =json= file. Rename this file as =client.json=.
+7. On linux, put this file at =~/.config/gsync/client.json=. On windows, at =C:\Users\<Username>\AppData\Local\gsync\client.json=.
 
 ** Step 1: installing gsync
 
