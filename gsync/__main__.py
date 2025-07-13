@@ -1,7 +1,5 @@
 import argparse
 
-from gsync.sync import sync, Options
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -36,6 +34,8 @@ def main():
     parser.add_argument("destinationdir")
 
     args = parser.parse_args()
+
+    from gsync.sync import sync, Options
 
     options: Options = {
         "recursive": args.recursive,
