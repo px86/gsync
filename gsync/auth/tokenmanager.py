@@ -40,8 +40,12 @@ class TokenManager:
         self.redirect_uri = None
 
     def read_cache_file(self) -> dict:
-        with open(self.cachefile, "r") as f:
-            return json.loads(f.read())
+        try:
+            with open(self.cachefile, "r") as f:
+                return json.loads(f.read())
+        except FileNotFoundError:
+            logging.info("Cache file is missing!")
+            return {}
 
     def write_cache_file(self, data: dict) -> None:
         with open(self.cachefile, "w") as f:
